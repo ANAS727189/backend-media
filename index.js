@@ -29,11 +29,12 @@ const upload = multer({
   }
 });
 
-app.use(cors(
-  { 
-     origin: "https://front-media-kou81vc6o-anas727189s-projects.vercel.app/",
-     credentials: true 
-    }));
+app.use(cors({
+  origin: ["https://front-media-kou81vc6o-anas727189s-projects.vercel.app", "https://front-media-kou81vc6o-anas727189s-projects.vercel.app"],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
@@ -111,6 +112,14 @@ app.get("/videos/:id", async (req, res) => {
     console.error("Error fetching video:", err);
     res.status(500).json({ message: "Error fetching video" });
   }
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 app.listen(port, () => {
