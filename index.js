@@ -28,10 +28,22 @@ const upload = multer({
     }
   }
 });
+const allowedOrigins = [
+  'https://front-media-njdqwxa3v-anas727189s-projects.vercel.app',
+  'https://front-media-kou81vc6o-anas727189s-projects.vercel.app',
+  'http://localhost:5173'
+];
 
 app.use(cors({
-  origin: ["https://front-media-kou81vc6o-anas727189s-projects.vercel.app", "https://front-media-kou81vc6o-anas727189s-projects.vercel.app"],
-  methods: ['GET', 'POST'],
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true
 }));
 
@@ -114,12 +126,19 @@ app.get("/videos/:id", async (req, res) => {
   }
 });
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', true);
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
 });
 
 app.listen(port, () => {
