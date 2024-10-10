@@ -29,7 +29,7 @@ const upload = multer({
   }
 });
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: "https://front-media-d4n4qqjyx-anas727189s-projects.vercel.app/", credentials: true }));
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
@@ -59,13 +59,14 @@ app.post("/upload", upload.single("file"), async (req, res) => {
         return res.status(500).json({ message: "Error converting video" });
       }
 
+      
       // Save video metadata in MongoDB
       try {
         const newVideo = new Video({
           title: req.file.originalname,
           description: req.body.description || "No description", // Optional field
-          videoPath: `http://localhost:8000/uploads/videos/${videoId}/index.m3u8`,
-          thumbnailPath: `http://localhost:8000/uploads/videos/${videoId}/thumbnail.jpg`,
+          videoPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/index.m3u8`,
+          thumbnailPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/thumbnail.jpg`,
         });
 
         await newVideo.save();
