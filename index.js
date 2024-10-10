@@ -29,7 +29,11 @@ const upload = multer({
   }
 });
 
-app.use(cors({ origin: "https://front-media-d4n4qqjyx-anas727189s-projects.vercel.app/", credentials: true }));
+app.use(cors(
+  { 
+     origin: "https://front-media-kou81vc6o-anas727189s-projects.vercel.app/",
+     credentials: true 
+    }));
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
