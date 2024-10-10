@@ -5,12 +5,12 @@ import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import fs from "fs";
 import { exec } from "child_process";
-import { Video } from "./models/database.js"; // Import Video model
+import { Video } from "./models/database.js"; 
 
 const app = express();
 const port = 8000;
 
-// Multer configuration
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "./uploads"),
   filename: (req, file, cb) => cb(null, `${file.fieldname}-${uuidv4()}${path.extname(file.originalname)}`)
@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 800 * 1024 * 1024 }, // 800MB limit
+  limits: { fileSize: 1000 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg'];
     if (allowedTypes.includes(file.mimetype)) {
@@ -41,7 +41,6 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     const videoId = uuidv4();
     const videoPath = req.file.path;
     const outputPath = `./uploads/videos/${videoId}`;
-    // const outputPath = path.join(__dirname, "uploads", "videos", videoId);
     const hlsPath = `${outputPath}/index.m3u8`;
 
     fs.mkdirSync(outputPath, { recursive: true });
@@ -64,7 +63,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
       try {
         const newVideo = new Video({
           title: req.file.originalname,
-          description: req.body.description || "No description", // Optional field
+          description: req.body.description || "No description", 
           videoPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/index.m3u8`,
           thumbnailPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/thumbnail.jpg`,
         });
@@ -88,7 +87,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
 app.get("/videos", async (req, res) => {
   try {
-    const videos = await Video.find();  // Fetch all videos from MongoDB
+    const videos = await Video.find(); 
     res.status(200).json(videos);
   } catch (err) {
     console.error("Error fetching videos:", err);
