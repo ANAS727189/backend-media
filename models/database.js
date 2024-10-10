@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 // Connect to MongoDB using Mongoose
-mongoose.connect("mongodb+srv://Anas:anaskhan083@cluster0.hvtkj.mongodb.net/Cluster0?retryWrites=true&w=majority")
+mongoose.connect("mongodb+srv://Anas:anaskhan083@cluster0.hvtkj.mongodb.net/video-streaming?retryWrites=true&w=majority")
   .then(() => console.log("Database connected"))
   .catch(err => console.log("Database connection failed", err));
 
