@@ -30,10 +30,8 @@ const upload = multer({
   }
 });
 const allowedOrigins = [
-  'https://front-media-njdqwxa3v-anas727189s-projects.vercel.app',
-  'https://front-media-kou81vc6o-anas727189s-projects.vercel.app',
-  'https://front-media-hj76lg13e-anas727189s-projects.vercel.app/',
   'https://front-media-flame.vercel.app/',
+  'https://front-media.onrender.com/',
   'http://localhost:5173'
 ];
 
