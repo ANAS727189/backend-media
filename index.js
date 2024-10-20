@@ -6,9 +6,10 @@ import path from "path";
 import fs from "fs";
 import { exec } from "child_process";
 import { Video } from "./models/database.js"; 
+import sharp from "sharp"; 
 
 const app = express();
-const port = 8000;
+const port = 8001;
 
 
 const storage = multer.diskStorage({
@@ -59,48 +60,71 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     const videoPath = req.file.path;
     const outputPath = `./uploads/videos/${videoId}`;
     const hlsPath = `${outputPath}/index.m3u8`;
+    const thumbnailPath = `${outputPath}/thumbnail.jpg`;
+    const framePath = `${outputPath}/frame.jpg`;
 
+    // Create the output directory for HLS segments and thumbnails
     fs.mkdirSync(outputPath, { recursive: true });
 
+    // Step 1: Convert the video to HLS format
     const ffmpegCommand = `ffmpeg -i ${videoPath} \
       -codec:v libx264 -codec:a aac \
       -hls_time 10 -hls_playlist_type vod \
       -hls_segment_filename "${outputPath}/segment%03d.ts" \
-      -vf "thumbnail,scale=640:360" -frames:v 1 "${outputPath}/thumbnail.jpg" \
-      -start_number 0 ${hlsPath}`;
+      ${hlsPath}`;
 
-    exec(ffmpegCommand, async (error, stdout, stderr) => {
+    exec(ffmpegCommand, (error, stdout, stderr) => {
       if (error) {
-        console.error(`FFmpeg error: ${error.message}`);
-        return res.status(500).json({ message: "Error converting video" });
+        console.error(`FFmpeg HLS error: ${error.message}`);
+        return res.status(500).json({ message: "Error converting video to HLS" });
       }
 
-      
-      // Save video metadata in MongoDB
-      try {
-        const newVideo = new Video({
-          title: req.file.originalname,
-          description: req.body.description || "No description", 
-          videoPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/index.m3u8`,
-          thumbnailPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/thumbnail.jpg`,
-        });
+    
+      const ffmpegCommandThumbnail = `ffmpeg -i ${videoPath} -ss 00:00:02 -vframes 1 ${framePath}`;
 
-        await newVideo.save();
+      exec(ffmpegCommandThumbnail, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`FFmpeg frame extraction error: ${error.message}`);
+          return res.status(500).json({ message: "Error extracting frame" });
+        }
 
-        res.status(200).json({
-          message: "Video uploaded successfully",
-          video: newVideo,
-        });
-      } catch (err) {
-        console.error("Database save error:", err);
-        res.status(500).json({ message: "Error saving video metadata" });
-      }
+        // Step 3: Resize the frame to create a thumbnail using sharp
+        sharp(framePath)
+          .resize(640, 360)
+          .toFile(thumbnailPath, async (err) => {
+            if (err) {
+              console.error("Sharp thumbnail processing error:", err);
+              return res.status(500).json({ message: "Error processing thumbnail" });
+            }
+
+            try {
+              // Save video metadata in MongoDB
+              const newVideo = new Video({
+                title: req.file.originalname,
+                description: req.body.description || "No description",
+                videoPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/index.m3u8`,
+                thumbnailPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/thumbnail.jpg`,
+              });
+
+              await newVideo.save();
+
+              res.status(200).json({
+                message: "Video uploaded successfully",
+                video: newVideo,
+              });
+            } catch (err) {
+              console.error("Database save error:", err);
+              res.status(500).json({ message: "Error saving video metadata" });
+            }
+          });
+      });
     });
   } catch (error) {
     console.error("Upload error:", error);
     res.status(500).json({ message: "Error uploading video" });
   }
 });
+
 
 app.get("/videos", async (req, res) => {
   try {
