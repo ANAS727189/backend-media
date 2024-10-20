@@ -11,7 +11,6 @@ import sharp from "sharp";
 const app = express();
 const port = 8001;
 
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "./uploads"),
   filename: (req, file, cb) => cb(null, `${file.fieldname}-${uuidv4()}${path.extname(file.originalname)}`)
@@ -19,7 +18,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 1000 * 1024 * 1024 }, 
+  limits: { fileSize: 1000 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg'];
     if (allowedTypes.includes(file.mimetype)) {
@@ -29,6 +28,8 @@ const upload = multer({
     }
   }
 });
+
+// CORS configuration
 const allowedOrigins = [
   'https://front-media-flame.vercel.app/',
   'https://front-media.onrender.com/',
@@ -36,7 +37,7 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) === -1) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
@@ -63,32 +64,36 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     const thumbnailPath = `${outputPath}/thumbnail.jpg`;
     const framePath = `${outputPath}/frame.jpg`;
 
-    // Create the output directory for HLS segments and thumbnails
-    fs.mkdirSync(outputPath, { recursive: true });
+    // Create output directory
+    try {
+      fs.mkdirSync(outputPath, { recursive: true });
+    } catch (err) {
+      return res.status(500).json({ message: "Error creating output directory" });
+    }
 
-    // Step 1: Convert the video to HLS format
+    // Convert the video to HLS format
     const ffmpegCommand = `ffmpeg -i ${videoPath} \
       -codec:v libx264 -codec:a aac \
       -hls_time 10 -hls_playlist_type vod \
       -hls_segment_filename "${outputPath}/segment%03d.ts" \
       ${hlsPath}`;
 
-    exec(ffmpegCommand, (error, stdout, stderr) => {
+    exec(ffmpegCommand, (error) => {
       if (error) {
         console.error(`FFmpeg HLS error: ${error.message}`);
         return res.status(500).json({ message: "Error converting video to HLS" });
       }
 
-    
+      // Extract a frame for thumbnail
       const ffmpegCommandThumbnail = `ffmpeg -i ${videoPath} -ss 00:00:02 -vframes 1 ${framePath}`;
 
-      exec(ffmpegCommandThumbnail, (error, stdout, stderr) => {
+      exec(ffmpegCommandThumbnail, (error) => {
         if (error) {
           console.error(`FFmpeg frame extraction error: ${error.message}`);
           return res.status(500).json({ message: "Error extracting frame" });
         }
 
-        // Step 3: Resize the frame to create a thumbnail using sharp
+        // Resize the frame to create a thumbnail using sharp
         sharp(framePath)
           .resize(640, 360)
           .toFile(thumbnailPath, async (err) => {
@@ -125,10 +130,10 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-
+// Video retrieval routes
 app.get("/videos", async (req, res) => {
   try {
-    const videos = await Video.find(); 
+    const videos = await Video.find();
     res.status(200).json(videos);
   } catch (err) {
     console.error("Error fetching videos:", err);
@@ -150,21 +155,13 @@ app.get("/videos/:id", async (req, res) => {
   }
 });
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', true);
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send({ message: "An unexpected error occurred!" });
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
