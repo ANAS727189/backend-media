@@ -32,7 +32,7 @@ const upload = multer({
 // CORS configuration
 const allowedOrigins = [
   'https://front-media-flame.vercel.app/',
-  'https://front-media.onrender.com/',
+  'https://front-media.onrender.com',
   'http://localhost:5173'
 ];
 
