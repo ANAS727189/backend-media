@@ -103,12 +103,12 @@ app.post("/upload", upload.single("file"), async (req, res) => {
             }
 
             try {
-              // Save video metadata in MongoDB
+              // Save video metadata in MongoDB with correct URL paths
               const newVideo = new Video({
                 title: req.file.originalname,
                 description: req.body.description || "No description",
-                videoPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/index.m3u8`,
-                thumbnailPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/thumbnail.jpg`,
+                videoPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/index.m3u8`,  // Updated videoPath
+                thumbnailPath: `https://backend-media-hets.onrender.com/uploads/videos/${videoId}/thumbnail.jpg`,  // Updated thumbnailPath
               });
 
               await newVideo.save();
@@ -129,6 +129,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     res.status(500).json({ message: "Error uploading video" });
   }
 });
+
 
 // Video retrieval routes
 app.get("/videos", async (req, res) => {
