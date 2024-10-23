@@ -11,6 +11,15 @@ import sharp from "sharp";
 const app = express();
 const port = 8001;
 
+exec('ffmpeg -version', (error, stdout, stderr) => {
+  if (error) {
+    console.error('FFmpeg is not installed or not accessible:', error);
+    process.exit(1);
+  } else {
+    console.log('FFmpeg is installed and accessible');
+  }
+});
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "./uploads"),
   filename: (req, file, cb) => cb(null, `${file.fieldname}-${uuidv4()}${path.extname(file.originalname)}`)
@@ -31,7 +40,6 @@ const upload = multer({
 
 // CORS configuration
 const allowedOrigins = [
-  'https://front-media-flame.vercel.app/',
   'https://front-media.onrender.com',
   'http://localhost:5173'
 ];
@@ -46,7 +54,8 @@ app.use(cors({
     return callback(null, true);
   },
   methods: ['GET', 'POST', 'OPTIONS'],
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
